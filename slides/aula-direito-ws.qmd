@@ -216,6 +216,17 @@ da.head().to_html()
 knitr::include_graphics("img/feelings.gif")
 ```
 
+## Cuidados
+
+- Risco de derrubar ou comprometer a estabilidade do site.
+
+- Vale à pena conversar com a entidade detentora dos dados.
+
+```{r}
+knitr::include_graphics("img/spiderman.gif")
+```
+
+
 ## Política do web scraping
 
 ### Quando usar
@@ -230,15 +241,6 @@ knitr::include_graphics("img/feelings.gif")
 
 - As informações do site não são públicas.
 
-## Cuidados
-
-- Risco de derrubar ou comprometer a estabilidade do site.
-
-- Vale à pena conversar com a entidade detentora dos dados.
-
-```{r}
-knitr::include_graphics("img/spiderman.gif")
-```
 
 ## Resumo
 
