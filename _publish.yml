@@ -1,0 +1,4 @@
+- source: aula-direito-ws.qmd
+  quarto-pub:
+    - id: fd70824d-63cc-49bf-9e19-8fa3b4154ad1
+      url: 'https://jtrecenti.quarto.pub/aula-ws'

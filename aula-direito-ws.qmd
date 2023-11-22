@@ -1,0 +1,259 @@
+---
+title: "Web Scraping"
+subtitle: 'Aplicação no TJSP, tópicos e dicas'
+format:
+  insper-revealjs:
+    self-contained: true
+engine: knitr
+---
+
+## Objetivos de aprendizagem
+
+- Entender o que é web scraping e quando usar.
+- Conhecer o fluxo de trabalho para fazer web scraping.
+- Conhecer os principais tipos de problemas que podemos encontrar.
+- Conhecer as principais ferramentas para fazer web scraping.
+- Conhecer a política do web scraping.
+
+## Por que web scraping?
+
+**Tudo o que você vê na internet pode se transformar dados para analisar!**
+
+```{r}
+#| echo: false
+#| out-width: 60%
+knitr::include_graphics("img/matrix.gif")
+```
+
+### No Direito
+
+Os dados do judiciário são **públicos**, mas não são **abertos**.
+
+Existem novas iniciativas para tornar os dados do judiciário mais abertos, como o [DataJud](https://www.cnj.jus.br/datajud), mas ainda há muito a ser feito.
+
+
+## Fluxo do Web Scraping
+
+```{r fluxo-ws}
+#| echo: false
+knitr::include_graphics("img/cycle.png")
+```
+
+
+## Tipos de problemas
+
+- **APIs disponíveis**: O site fornece uma forma estruturada e documentada para acessar as páginas.
+
+- **APIs escondidas**: O site não fornece uma forma estruturada e documentada para acessar as páginas, mas internamente é alimentado por uma API não documentada, que podemos descobrir e usar.
+
+- **HTML estático**: O site não fornece uma forma estruturada de acessar as páginas, e as páginas são geradas de forma estática (carregam sem necessidade de usar um navegador).
+
+- **HTML dinâmico**: O site não fornece uma forma estruturada de acessar as páginas, e as páginas são geradas de forma dinâmica.
+
+- ...
+
+## Ferramentas
+
+- [requests](https://requests.readthedocs.io/en/master/): pacote do Python para acessar sites.
+- [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/): pacote do Python para transformar arquivos html em páginas estruturadas.
+- [Selenium](https://www.selenium.dev/): ferramenta para automatizar ações em um navegador. Útil para páginas dinâmicas.
+
+```{python}
+#| echo: true
+#| code-line-numbers: "|1|2|4"
+import requests
+from bs4 import BeautifulSoup
+
+import pandas as pd
+```
+
+## Exemplo: API escondida do TJSP
+
+```{python}
+#| echo: true
+#| code-line-numbers: "|1|3|5,6,7,8|9,10"
+
+cd = '590005PV80000'
+
+u = f'https://api.tjsp.jus.br/processo/cpopg/dadosbasicos/{cd}'
+
+r = requests.post(
+  u,
+  headers = {'Content-Type': 'application/json; charset=utf-8'}
+)
+
+r.status_code
+```
+
+
+## Exemplo: API escondida do TJSP
+
+```{python}
+#| echo: true
+r.json()
+```
+
+
+# HTML
+
+## HTML
+
+- HTML (Hypertext Markup Language) é uma linguagem de marcação.
+
+- Por trás de todo site há pelo menos um arquivo `.html`.
+
+```{r}
+#| echo: false
+knitr::include_graphics("img/html1.png")
+```
+
+## Tags, atributos e texto
+
+- Tags (head, body, h1, p, ...) demarcam as seções e sub-seções
+
+- enquanto atributos (charset, style, ...) mudam como essas seções são renderizadas pelo navegador.
+
+```{r}
+#| echo: false
+knitr::include_graphics("img/html3.png")
+```
+
+## Estrutura
+
+O HTML do exemplo, na verdade, é isso aqui:
+
+```{r}
+#| echo: false
+knitr::include_graphics("img/html_exemplo_tree_paifilho.png")
+```
+
+## Usando o BeautifulSoup
+
+- Exemplo: coletando todas as tags `<p>` (parágrafos)
+
+```{python}
+#| echo: true
+#| code-line-numbers: "1,2,3|5,6|8,9"
+
+# Ler o HTML
+with open("img/html_exemplo.html") as f:
+  html = BeautifulSoup(f)
+
+# Imprimir o HTML
+print(html.prettify())
+
+```
+
+## Usando o BeautifulSoup
+
+- Exemplo: coletando todas as tags `<p>` (parágrafos)
+
+```{python}
+#| echo: true
+
+# Extrair o texto contido em cada um dos nodes
+html.find_all('p')
+```
+
+## Extraindo texto e atributos
+
+```{python}
+#| echo: true
+
+# Extrair o texto contido em cada um dos nodes
+html.p.text
+html.find_all('p')[0].text
+
+# Extrair os atributos
+html.find_all('p')[0].attrs
+html.find_all('p')[1].attrs
+```
+
+## Aplicação: Descobrindo o Código do Processo!
+
+```{python}
+#| echo: true
+#| output-location: slide
+#| code-line-numbers: "4,5|7|8"
+
+with open("cpopg.html") as f:
+  html_cpopg = BeautifulSoup(f)
+
+# tr with class='fundocinza1'
+trs = html_cpopg.find_all('tr', {'class': 'fundocinza1'})
+
+links = [tr.a for tr in trs]
+codigos = [link.attrs['name'][0:13] for link in links]
+```
+
+## Aplicação: Iterar! {.smaller}
+
+```{python}
+#| echo: true
+#| output-location: slide
+#| results: 'asis'
+#| code-line-numbers: "1,2,3,4,5,6,7,8,9|11,12,13"
+
+# read data and transform to dataframe
+lista = []
+for cd in codigos:
+  u_base = f'https://api.tjsp.jus.br/processo/cpopg/dadosbasicos/{cd}'
+  r = requests.post(
+    u_base,
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+  )
+  lista.append(r.json())
+
+da = pd.DataFrame(lista)
+
+da.head().to_html()
+```
+
+## Como você se sente quando aprende web scraping
+
+```{r}
+#| echo: false
+knitr::include_graphics("img/feelings.gif")
+```
+
+## Política do web scraping
+
+### Quando usar
+
+- Quando precisamos coletar um volume grande de dados da internet
+
+### Quando não usar
+
+- Existem formas mais simples de obter os dados (API, base de dados, etc.)
+
+- Os termos de uso do site não nos permitem fazer isso.
+
+- As informações do site não são públicas.
+
+## Cuidados
+
+- Risco de derrubar ou comprometer a estabilidade do site.
+
+- Vale à pena conversar com a entidade detentora dos dados.
+
+```{r}
+knitr::include_graphics("img/spiderman.gif")
+```
+
+## Resumo
+
+- Web scraping é uma técnica para coletar dados de sites.
+- Existe um fluxo para fazer web scraping.
+- Existem 4 tipos principais 'níveis' de dificuldade, sendo que o primeiro deles não é considerado web scraping.
+- Existem várias ferramentas para fazer web scraping. Em python, as principais são requests, beautiful soup e selenium.
+- É importante conhecer a política do site para fazer web scraping.
+
+## Curiosidade: como eu descobri essa API escondida?
+
+Longa história, mas basicamente:
+
+- instalei o aplicativo do TJSP no celular
+- usei o aplicativo tPacketCapture para interceptar as requisições do aplicativo
+- descobri que o aplicativo usa uma API escondida para buscar os processos
+- descobri que a API escondida usa o mesmo código do processo que aparece na URL do site
+- descobri que a API escondida retorna os dados do processo em formato JSON
